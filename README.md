@@ -9,6 +9,7 @@ StellarChat/
 │   ├── app/
 │   │   ├── main.py            # FastAPI/Flask 入口
 │   │   ├── routers/
+│   │   │   ├── chat_ws.py     # 聊天接口（WebSocket）
 │   │   │   ├── chat.py        # 聊天接口（LLM 推理）
 │   │   │   ├── health.py      # 健康检查接口
 │   │   ├── models/
