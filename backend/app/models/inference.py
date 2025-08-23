@@ -1,5 +1,6 @@
+import os
 import torch
-from transformers import AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from app.config import settings
 from app.utils import get_logger
 from app.models.tokenizer import Tokenizer
@@ -7,18 +8,23 @@ from app.models.tokenizer import Tokenizer
 logger = get_logger()
 
 class LLMInference:
-    def __init__(self, model_path: str = settings.MODEL_PATH):
-        logger.info(f"加载模型: {model_path}")
-        self.tokenizer = Tokenizer(model_path)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_path, 
-            torch_dtype=torch.float16, 
-            device_map="auto"  # 自动分配到GPU/CPU
+    _instance = None  # 单例
+
+    def __init__(cls, model_path: str = settings.MODEL_PATH):
+        logger.info(f"正在加载模型加载模型: {model_path}")
+        cls._instance = super(LLMInference, cls).__new__(cls)
+        cls._instance.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        cls._instance.model = AutoModelForCausalLM.from_pretrained(
+            model_path,
+            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+            device_map="auto" if torch.cuda.is_available() else None
         )
-        self.model.eval()
+        cls._instance.model.eval()
+        return cls._instance
 
     def chat(self, prompt: str, max_new_tokens: int = 200) -> str:
-        inputs = self.tokenizer.encode(prompt)
+        """一次性生成完整结果"""
+        inputs = self.tokenizer(prompt)
         outputs = self.model.generate(
             inputs,
             max_new_tokens=max_new_tokens,
@@ -28,9 +34,9 @@ class LLMInference:
         )
         return self.tokenizer.decode(outputs[0])
     
-    def stream_chat(self, prompt: str, max_new_tokens: int = 200):
-        """流式逐步生成（逐token输出）"""
-        inputs = self.tokenizer.encode(prompt)
+    async def stream_chat(self, prompt: str, max_new_tokens: int = 200):
+        """异步流式逐步生成（逐token输出）"""
+        inputs = self.tokenizer(prompt)
         input_ids = inputs.to(self.model.device)
 
         # 使用 `generate` + `stopping_criteria` 实现逐步生成
