@@ -1,7 +1,7 @@
 import uuid
 import json
 import time
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, Query
 from app.models.schemas import (
     ChatWebSocketMessage,
     SessionStartEvent,
@@ -14,19 +14,29 @@ from app.models.schemas import (
     ChatMessage
 )
 from app.services.chat_service import ChatService
+from app.models.database import get_db
+from app.services.database_service import DatabaseService
 from app.utils import get_logger
 
 router = APIRouter()
 logger = get_logger()
 chat_service = ChatService()
+database_service = DatabaseService()
 
 
 @router.websocket("/ws/chat")
-async def websocket_chat(websocket: WebSocket):
+async def websocket_chat(websocket: WebSocket, session_id: str = Query(None, description="会话ID，用于保存聊天历史")):
     """WebSocket聊天接口"""
     await websocket.accept()
-    session_id = str(uuid.uuid4())
+    
+    # 如果没有提供会话ID，则生成一个新的
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    
     logger.info(f"新建WebSocket会话: {session_id}")
+    
+    # 获取数据库连接
+    db = next(get_db())
     
     try:
         # 发送会话开始事件
@@ -35,6 +45,16 @@ async def websocket_chat(websocket: WebSocket):
                 data={"session_id": session_id}
             ).model_dump())
         )
+        
+        # 如果提供了会话ID，获取会话历史
+        if session_id:
+            try:
+                # 确保会话存在，如果不存在则创建
+                db_session = database_service.get_session(db, session_id)
+                if not db_session:
+                    database_service.create_session(db, f"WebSocket会话 {session_id[:8]}")
+            except Exception as e:
+                logger.warning(f"创建会话失败: {str(e)}")
         
         while True:
             # 接收客户端消息
@@ -45,6 +65,24 @@ async def websocket_chat(websocket: WebSocket):
                 logger.info(f"[{session_id}] 收到消息: {message.content}")
                 
                 try:
+                    # 获取会话历史（如果有的话）
+                    chat_history = []
+                    if session_id:
+                        try:
+                            chat_history = database_service.get_messages_as_chat_history(db, session_id)
+                        except Exception as e:
+                            logger.warning(f"[{session_id}] 获取会话历史失败: {str(e)}")
+                    
+                    # 将新消息添加到历史中
+                    messages = chat_history + [ChatMessage(role="user", content=message.content)]
+                    
+                    # 保存用户消息到数据库
+                    if session_id:
+                        try:
+                            database_service.add_message(db, session_id, "user", message.content, len(message.content))
+                        except Exception as e:
+                            logger.warning(f"[{session_id}] 保存用户消息失败: {str(e)}")
+                    
                     # 发送内容块开始事件
                     await websocket.send_text(
                         json.dumps(ContentBlockStartEvent(
@@ -52,13 +90,12 @@ async def websocket_chat(websocket: WebSocket):
                         ).model_dump())
                     )
                     
-                    # 转换为消息格式
-                    messages = [ChatMessage(role="user", content=message.content)]
-                    
                     # 流式生成回复
                     token_count = 0
+                    assistant_response = ""
                     async for token in chat_service.generate_stream(messages):
                         if token:  # 只发送非空token
+                            assistant_response += token
                             # 发送内容块增量事件
                             await websocket.send_text(
                                 json.dumps(ContentBlockDeltaEvent(
@@ -72,6 +109,13 @@ async def websocket_chat(websocket: WebSocket):
                                 ).model_dump())
                             )
                             token_count += 1
+                    
+                    # 保存AI回复到数据库
+                    if session_id and assistant_response:
+                        try:
+                            database_service.add_message(db, session_id, "assistant", assistant_response, token_count)
+                        except Exception as e:
+                            logger.warning(f"[{session_id}] 保存AI回复失败: {str(e)}")
                     
                     # 发送内容块结束事件
                     await websocket.send_text(
@@ -119,3 +163,5 @@ async def websocket_chat(websocket: WebSocket):
             )
         except:
             pass
+    finally:
+        db.close()

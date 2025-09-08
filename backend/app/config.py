@@ -24,6 +24,9 @@ class Settings:
     
     # API配置
     API_PREFIX: str = "/api"
+    
+    # 数据库配置
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./chat_history.db")
 
 
 # 创建全局配置实例

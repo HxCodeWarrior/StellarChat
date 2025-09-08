@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 import asyncio
 import json
 import time
@@ -13,16 +13,19 @@ from app.models.schemas import (
     ChatCompletionChunkChoice,
     ChatCompletionChunkDelta
 )
+from app.models.database import get_db
+from app.services.database_service import DatabaseService
 from app.utils import get_logger, generate_id, format_timestamp
 
 logger = get_logger()
 llm = LLMInference()
+database_service = DatabaseService()
 
 
 class ChatService:
     """聊天服务类"""
     
-    async def generate_completion(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
+    async def generate_completion(self, request: ChatCompletionRequest, session_id: str = None, db = Depends(get_db)) -> ChatCompletionResponse:
         """生成聊天完成响应"""
         try:
             # 记录开始时间
@@ -43,6 +46,30 @@ class ChatService:
             prompt_tokens = sum(len(msg.content) if isinstance(msg.content, str) else sum(len(item.text) for item in msg.content if item.type == "text" and item.text) for msg in request.messages)
             completion_tokens = len(response_text)
             total_tokens = prompt_tokens + completion_tokens
+            
+            # 如果提供了会话ID，将消息保存到数据库
+            if session_id:
+                # 保存用户消息（如果尚未保存）
+                for msg in request.messages:
+                    # 检查消息是否已存在
+                    existing_messages = database_service.get_messages_as_chat_history(db, session_id)
+                    if msg not in existing_messages:
+                        database_service.add_message(
+                            db, 
+                            session_id, 
+                            msg.role, 
+                            msg.content, 
+                            len(msg.content) if isinstance(msg.content, str) else 0
+                        )
+                
+                # 保存AI回复
+                database_service.add_message(
+                    db, 
+                    session_id, 
+                    "assistant", 
+                    response_text, 
+                    completion_tokens
+                )
             
             # 构造响应
             response = ChatCompletionResponse(
