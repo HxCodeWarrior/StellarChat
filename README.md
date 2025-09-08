@@ -59,7 +59,6 @@ StellarChat/
 
 ### DONE
 1. 初始化项目前端
--
 2. 初始化项目后端
 
 ### TODO

@@ -1,6 +1,6 @@
 fastapi
-uvicorn
-transformers
-torch
-pydantic
-prometheus-client
+ uvicorn
+ transformers
+ torch
+ pydantic>=2.0.0
+ prometheus-client

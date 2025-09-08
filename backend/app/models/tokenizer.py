@@ -4,6 +4,7 @@ from app.utils import get_logger
 
 logger = get_logger()
 
+
 class Tokenizer:
     def __init__(self, model_path: str = settings.MODEL_PATH):
         logger.info(f"加载分词器: {model_path}")
@@ -13,8 +14,14 @@ class Tokenizer:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
-    def encode(self, text: str):
-        return self.tokenizer.encode(text, return_tensors="pt")
+    def encode(self, text: str, **kwargs):
+        """编码文本"""
+        return self.tokenizer.encode(text, **kwargs)
 
-    def decode(self, tokens):
-        return self.tokenizer.decode(tokens, skip_special_tokens=True)
+    def decode(self, tokens, **kwargs):
+        """解码token"""
+        return self.tokenizer.decode(tokens, **kwargs)
+
+    def tokenize(self, text: str, **kwargs):
+        """分词"""
+        return self.tokenizer.tokenize(text, **kwargs)
