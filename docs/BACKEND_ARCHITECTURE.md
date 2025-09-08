@@ -1,168 +1,108 @@
-# StellarChat 后端架构设计文档
+# 后端应用架构文档
 
 ## 1. 概述
 
-本文档详细描述了 StellarChat 后端服务的架构设计，参考了主流 LLM 服务（如 OpenAI、Anthropic Claude）的设计模式，确保系统具备高性能、可扩展性和工业级稳定性。
+StellarByte LLM Chat Backend 是一个基于 FastAPI 的后端服务，提供聊天完成、会话管理和模型管理等功能。该应用使用 SQLite 作为数据库存储聊天历史，并集成了大型语言模型进行对话生成。
 
-## 2. 架构设计原则
+## 2. 技术栈
 
-1. **模块化设计**：各功能模块职责清晰，便于维护和扩展
-2. **兼容性**：API 设计兼容主流 LLM 服务接口格式
-3. **高性能**：优化模型推理和响应处理
-4. **可观测性**：集成监控和日志系统
-5. **可扩展性**：支持水平扩展和模型版本管理
+- **框架**: FastAPI
+- **数据库**: SQLite (通过 SQLAlchemy ORM)
+- **模型推理**: Transformers (Hugging Face)
+- **监控**: Prometheus
+- **日志**: Python logging with RotatingFileHandler
+- **测试**: pytest
 
-## 3. 整体架构
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    API Layer (FastAPI)                      │
-├─────────────────────────────────────────────────────────────┤
-│  Routers  │  Models  │  Services  │  Middleware  │  Utils   │
-├─────────────────────────────────────────────────────────────┤
-│                    Model Layer (LLM)                        │
-├─────────────────────────────────────────────────────────────┤
-│                 Infrastructure Layer (Docker)               │
-└─────────────────────────────────────────────────────────────┘
-```
-
-## 4. 模块设计
-
-### 4.1 API 层
-
-#### 4.1.1 路由模块 (Routers)
-- `health.py`：健康检查接口
-- `models.py`：模型管理接口
-- `chat_completions.py`：聊天完成接口（兼容 OpenAI 格式）
-- `chat_ws.py`：WebSocket 聊天接口
-
-#### 4.1.2 模型模块 (Models)
-- `inference.py`：模型推理核心逻辑
-- `tokenizer.py`：文本分词处理
-- `schemas.py`：数据模型定义
-
-#### 4.1.3 服务模块 (Services)
-- `chat_service.py`：聊天业务逻辑处理
-- `streaming_service.py`：流式输出处理
-- `model_service.py`：模型管理服务
-
-#### 4.1.4 中间件模块 (Middleware)
-- CORS 支持
-- 请求日志记录
-- 性能监控
-- 异常处理
-
-#### 4.1.5 工具模块 (Utils)
-- 日志配置
-- 错误处理
-- 工具函数
-
-### 4.2 模型层
-
-#### 4.2.1 模型管理
-- 单例模式确保模型只加载一次
-- 支持自动设备映射（CPU/GPU）
-- 支持精度选择（FP32/FP16）
-
-#### 4.2.2 推理优化
-- 使用缓存机制提升推理速度
-- 支持流式输出
-- 参数化控制生成过程
-
-### 4.3 基础设施层
-
-#### 4.3.1 容器化部署
-- Docker 镜像构建
-- 多阶段构建优化
-- 环境变量配置
-
-#### 4.3.2 监控集成
-- Prometheus 指标收集
-- 结构化日志输出
-
-## 5. 数据流设计
-
-### 5.1 HTTP 请求处理流程
+## 3. 项目结构
 
 ```
-Client → FastAPI Router → Service Layer → Model Inference → Response
+backend/
+├── app/                    # 主应用目录
+│   ├── __init__.py         # 包初始化文件
+│   ├── config.py           # 配置管理
+│   ├── main.py             # 应用入口点
+│   ├── utils.py            # 工具函数
+│   ├── models/             # 数据模型和Schema定义
+│   │   ├── __init__.py
+│   │   ├── database.py     # 数据库模型
+│   │   ├── schemas.py      # Pydantic模型
+│   │   ├── inference.py    # 模型推理相关
+│   │   └── tokenizer.py    # 分词器相关
+│   ├── routers/            # API路由
+│   │   ├── __init__.py
+│   │   ├── health.py       # 健康检查
+│   │   ├── models.py       # 模型管理
+│   │   ├── chat_completions.py  # 聊天完成API
+│   │   ├── chat_ws.py      # WebSocket聊天
+│   │   └── sessions.py     # 会话管理
+│   └── services/           # 业务逻辑层
+│       ├── __init__.py
+│       ├── chat_service.py     # 聊天服务
+│       └── database_service.py # 数据库服务
+├── logs/                   # 日志目录
+├── models/                 # 模型文件目录
+│   └── test/               # 测试模型
+├── tests/                  # 测试文件
+├── chat_history.db         # SQLite数据库文件
+├── init_db.py              # 数据库初始化脚本
+├── requirements.txt        # Python依赖
+└── run.sh                  # 启动脚本
 ```
 
-### 5.2 WebSocket 请求处理流程
+## 4. 核心组件
 
-```
-Client → WebSocket Handler → Streaming Service → Model Inference → Stream Events
-```
+### 4.1 应用入口 (main.py)
 
-## 6. API 设计
+- 创建 FastAPI 应用实例
+- 配置 CORS 中间件
+- 注册路由
+- 设置全局异常处理
+- 配置 Prometheus 监控指标
+- 实现请求日志记录中间件
 
-### 6.1 兼容性设计
-- 遵循 OpenAI API 格式
-- 支持标准的聊天完成接口
-- 兼容流式和非流式输出
+### 4.2 配置管理 (config.py)
 
-### 6.2 错误处理
-- 统一错误响应格式
-- 详细的错误信息
-- HTTP 状态码规范
+- 管理应用配置参数
+- 设置日志配置
+- 定义数据库连接URL
+- 配置模型路径和服务器参数
 
-## 7. 性能优化
+### 4.3 数据库模型 (models/database.py)
 
-### 7.1 模型优化
-- 自动设备选择（CPU/GPU）
-- 精度优化（FP16）
-- 缓存机制
+- 定义 SessionModel 和 MessageModel
+- 创建数据库引擎和会话工厂
+- 提供数据库会话管理器
 
-### 7.2 推理优化
-- 流式输出减少延迟
-- 批处理支持
-- 连接复用
+### 4.4 Schema定义 (models/schemas.py)
 
-## 8. 安全设计
+- 定义请求和响应的数据模型
+- 包括聊天消息、完成请求、模型信息等Pydantic模型
 
-### 8.1 访问控制
-- CORS 配置
-- 请求验证
-- 输入过滤
+### 4.5 路由 (routers/)
 
-### 8.2 数据安全
-- 日志脱敏
-- 异常信息保护
-- 资源限制
+- **health.py**: 健康检查端点
+- **models.py**: 模型列表端点
+- **chat_completions.py**: 聊天完成API (REST)
+- **chat_ws.py**: WebSocket聊天接口
+- **sessions.py**: 会话管理API
 
-## 9. 可观测性
+### 4.6 服务层 (services/)
 
-### 9.1 监控指标
-- 请求计数
-- 响应时间
-- 错误率
-- 资源使用率
+- **chat_service.py**: 处理聊天生成逻辑
+- **database_service.py**: 封装数据库操作
 
-### 9.2 日志设计
-- 结构化日志
-- 请求追踪
-- 性能日志
+## 5. 数据流
 
-## 10. 部署架构
+1. 用户通过 REST API 或 WebSocket 连接到应用
+2. 请求被路由到相应的处理函数
+3. 服务层处理业务逻辑
+4. 数据库服务处理数据持久化
+5. 聊天服务与模型交互生成回复
+6. 响应返回给用户
 
-### 10.1 容器化部署
-- Docker 镜像
-- 环境变量配置
-- 健康检查
+## 6. 监控和日志
 
-### 10.2 扩展性设计
-- 水平扩展支持
-- 负载均衡
-- 服务发现
-
-## 11. 未来扩展
-
-### 11.1 功能扩展
-- 多模型支持
-- 工具调用
-- 对话历史管理
-
-### 11.2 性能扩展
-- 模型量化
-- 分布式推理
-- 缓存优化
+- 使用 Prometheus 收集API请求指标
+- 通过 Python logging 模块记录应用日志
+- 日志同时输出到文件和控制台
+- 支持日志轮转以防止文件过大
