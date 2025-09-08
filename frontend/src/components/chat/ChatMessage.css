@@ -1,0 +1,48 @@
+.message {
+  display: flex;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  max-width: 80%;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.message.user {
+  align-self: flex-end;
+  background-color: #007acc;
+  color: white;
+  margin-left: auto;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  background-color: #2d2d2d;
+  color: #e0e0e0;
+}
+
+.message-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.message-role {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.message-text {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

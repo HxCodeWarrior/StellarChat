@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from 'react';
+import SessionManager from './components/chat/SessionManager';
+import ChatInterface from './components/chat/ChatInterface';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app">
+      <header className="app-header">
+        <h1>StellarChat</h1>
+      </header>
+      <div className="app-content">
+        <SessionManager 
+          onSessionSelect={setCurrentSessionId}
+          currentSessionId={currentSessionId}
+        />
+        <div className="chat-container">
+          {currentSessionId ? (
+            <ChatInterface sessionId={currentSessionId} />
+          ) : (
+            <div className="welcome-message">
+              <h2>欢迎使用 StellarChat</h2>
+              <p>选择一个现有会话或创建新会话开始聊天</p>
+            </div>
+          )}
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
