@@ -1,4 +1,5 @@
-node_modules/
+*.db
 __pycache__
+node_modules/
 backend/models/
 backend/logs/
