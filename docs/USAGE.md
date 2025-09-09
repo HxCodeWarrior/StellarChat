@@ -26,7 +26,7 @@ StellarChat 是一个基于 StellarByte LLM 模型的现代化 Web 聊天应用�
 ### 3.1 获取代码
 
 ```bash
-git clone https://github.com/your-username/StellarChat.git
+git clone https://github.com/HxCodeWarrior/StellarChat.git
 cd StellarChat
 ```
 
