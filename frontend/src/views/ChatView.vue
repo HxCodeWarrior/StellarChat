@@ -2,11 +2,10 @@
 import ChatInput from '@/components/ChatInput.vue'
 import ChatMessage from '@/components/ChatMessage.vue'
 import { Plus } from '@element-plus/icons-vue'
-import { computed, ref, watch, nextTick, onMounted } from 'vue'
+import { computed, ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { messageHandler } from '@/utils/messageHandler'
-import { createChatCompletion } from '@/utils/api'
-import { useSettingStore } from '@/stores/setting'
+import { WebSocketClient } from '@/utils/websocket'
 import SettingsPanel from '@/components/SettingsPanel.vue'
 import PopupMenu from '@/components/PopupMenu.vue'
 import DialogEdit from '@/components/DialogEdit.vue'
@@ -16,7 +15,9 @@ import { useRouter } from 'vue-router'
 const chatStore = useChatStore()
 const currentMessages = computed(() => chatStore.currentMessages)
 const isLoading = computed(() => chatStore.isLoading)
-const settingStore = useSettingStore()
+
+// WebSocket客户端实例
+const wsClient = new WebSocketClient()
 
 // 获取消息容器
 const messagesContainer = ref(null)
@@ -31,6 +32,70 @@ watch(
   { deep: true },
 )
 
+// 初始化WebSocket连接
+const initWebSocket = () => {
+  // 获取当前会话的后端会话ID
+  const sessionId = chatStore.getCurrentSessionId
+  
+  // 连接到WebSocket服务器
+  wsClient.connect(sessionId)
+  
+  // 注册连接事件处理器
+  wsClient.onEvent('open', () => {
+    console.log('WebSocket连接已建立')
+    // 连接建立后，确保发送按钮可用
+    chatStore.setIsLoading(false)
+  })
+  
+  // 注册消息处理器
+  wsClient.on('content_block_delta', (data) => {
+    const content = data.data?.delta?.text || ''
+    const reasoning = data.data?.delta?.reasoning_content || ''
+    
+    // 更新最后一条消息的内容
+    const lastMessage = chatStore.getLastMessage()
+    if (lastMessage && lastMessage.role === 'assistant') {
+      lastMessage.content += content
+      lastMessage.reasoning_content += reasoning
+    }
+  })
+  
+  wsClient.on('message_delta', (data) => {
+    const completionTokens = data.data?.usage?.output_tokens || 0
+    const lastMessage = chatStore.getLastMessage()
+    if (lastMessage) {
+      lastMessage.completion_tokens = completionTokens
+    }
+  })
+  
+  wsClient.on('message_stop', () => {
+    // 消息结束，重置loading状态
+    chatStore.setIsLoading(false)
+    const lastMessage = chatStore.getLastMessage()
+    if (lastMessage) {
+      lastMessage.loading = false
+    }
+  })
+  
+  wsClient.on('error', (error) => {
+    console.error('WebSocket错误:', error)
+    chatStore.updateLastMessage('抱歉，发生了一些错误，请稍后重试。')
+    chatStore.setIsLoading(false)
+    const lastMessage = chatStore.getLastMessage()
+    if (lastMessage) {
+      lastMessage.loading = false
+    }
+  })
+  
+  // 保存会话ID
+  wsClient.on('session_start', (data) => {
+    const sessionId = data.data?.session_id
+    if (sessionId) {
+      chatStore.setConversationSessionId(chatStore.currentConversationId, sessionId)
+    }
+  })
+}
+
 onMounted(() => {
   // 每次页面刷新时，将消息容器滚动到底部
   nextTick(() => {
@@ -40,6 +105,14 @@ onMounted(() => {
   if (chatStore.conversations.length === 0) {
     chatStore.createConversation()
   }
+  
+  // 初始化WebSocket连接
+  initWebSocket()
+})
+
+onUnmounted(() => {
+  // 组件卸载时关闭WebSocket连接
+  wsClient.close()
 })
 
 // 发送消息
@@ -55,28 +128,20 @@ const handleSend = async (messageContent) => {
     // 设置loading状态
     chatStore.setIsLoading(true)
     const lastMessage = chatStore.getLastMessage()
-    lastMessage.loading = true
+    if (lastMessage) {
+      lastMessage.loading = true
+    }
 
-    // 调用API获取回复
-    const messages = chatStore.currentMessages.map(({ role, content }) => ({ role, content }))
-    const response = await createChatCompletion(messages)
-
-    // 使用封装的响应处理函数
-    await messageHandler.handleResponse(
-      response,
-      settingStore.settings.stream,
-      (content, reasoning_content, tokens, speed) => {
-        chatStore.updateLastMessage(content, reasoning_content, tokens, speed)
-      },
-    )
+    // 通过WebSocket发送消息
+    wsClient.sendMessage(messageContent.text)
   } catch (error) {
     console.error('Failed to send message:', error)
     chatStore.updateLastMessage('抱歉，发生了一些错误，请稍后重试。')
-  } finally {
-    // 重置loading状态
     chatStore.setIsLoading(false)
     const lastMessage = chatStore.getLastMessage()
-    lastMessage.loading = false
+    if (lastMessage) {
+      lastMessage.loading = false
+    }
   }
 }
 
@@ -101,6 +166,8 @@ const popupMenu = ref(null)
 // 添加新建对话的处理函数
 const handleNewChat = () => {
   chatStore.createConversation()
+  // 重新初始化WebSocket连接
+  initWebSocket()
 }
 
 // 获取当前对话标题
