@@ -69,7 +69,7 @@ onUnmounted(() => {
             <div class="shortcut-key">⌘ K</div>
           </div>
         </div>
-        <a href="https://github.com/Solomon-He/LLM-chat" target="_blank" class="github-link">
+        <a href="https://github.com/HxCodeWarrior/StellarChat" target="_blank" class="github-link">
           <img src="@/assets/photo/github.png" alt="GitHub" class="github-icon" />
         </a>
       </div>
