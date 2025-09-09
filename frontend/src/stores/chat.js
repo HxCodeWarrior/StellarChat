@@ -8,7 +8,7 @@ export const useChatStore = defineStore(
     const conversations = ref([
       {
         id: '1',
-        title: '日常问候',
+        title: '新对话',
         messages: [],
         createdAt: Date.now(),
       },
@@ -32,7 +32,7 @@ export const useChatStore = defineStore(
     const createConversation = () => {
       const newConversation = {
         id: Date.now().toString(),
-        title: '日常问候',
+        title: '新对话',
         messages: [],
         createdAt: Date.now(),
       }
@@ -103,6 +103,19 @@ export const useChatStore = defineStore(
       }
     }
 
+    // 设置对话的后端会话ID
+    const setConversationSessionId = (conversationId, sessionId) => {
+      const conversation = conversations.value.find((c) => c.id === conversationId)
+      if (conversation) {
+        conversation.sessionId = sessionId
+      }
+    }
+
+    // 获取当前对话的后端会话ID
+    const getCurrentSessionId = computed(() => {
+      return currentConversation.value?.sessionId || null
+    })
+
     return {
       conversations,
       currentConversationId,
@@ -117,6 +130,8 @@ export const useChatStore = defineStore(
       switchConversation,
       updateConversationTitle,
       deleteConversation,
+      setConversationSessionId,
+      getCurrentSessionId,
     }
   },
   {
