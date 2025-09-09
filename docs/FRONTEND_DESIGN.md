@@ -13,39 +13,69 @@
 
 ## 项目结构
 ```
-src/
-├── components/
-│   ├── layout/
-│   │   ├── Header.tsx
-│   │   ├── Sidebar.tsx
-│   │   └── Layout.tsx
-│   ├── chat/
-│   │   ├── MessageList.tsx
-│   │   ├── MessageItem.tsx
-│   │   ├── InputArea.tsx
-│   │   └── TypingIndicator.tsx
-│   └── ui/
-│       ├── Button.tsx
-│       ├── IconButton.tsx
-│       ├── Modal.tsx
-│       └── Loader.tsx
-├── hooks/
-│   ├── useChat.ts
-│   └── useLocalStorage.ts
-├── types/
-│   └── index.ts
-├── utils/
-│   ├── api.ts
-│   └── helpers.ts
-├── styles/
-│   └── index.css
-│   └── App.css
-│   └── components/
-│   └── global/
-│   └── themes/
-│   └── utilities/
-├── App.tsx
-└── main.tsx
+\---src
+    |   App.tsx
+    |   AppContext.tsx
+    |   main.tsx
+    |
+    +---components
+    |   +---chat
+    |   |       ChatInterface.tsx
+    |   |       InputArea.tsx
+    |   |       MessageItem.tsx
+    |   |       MessageList.tsx
+    |   |       TypingIndicator.tsx
+    |   |
+    |   +---layout
+    |   |       Header.tsx
+    |   |       Layout.tsx
+    |   |       Sidebar.tsx
+    |   |
+    |   \---ui
+    |           Button.tsx
+    |           IconButton.tsx
+    |           Loader.tsx
+    |           Modal.tsx
+    |
+    +---contexts
+    |       AppContext.tsx
+    |
+    +---hooks
+    |       useChat.ts
+    |       useLocalStorage.ts
+    |
+    +---styles
+    |   |   App.css
+    |   |   index.css
+    |   |   themes.css
+    |   |
+    |   \---components
+    |       +---chat
+    |       |       ChatInterface.css
+    |       |       InputArea.css
+    |       |       MessageItem.css
+    |       |       MessageList.css
+    |       |       TypingIndicator.css
+    |       |
+    |       +---layout
+    |       |       Header.css
+    |       |       Layout.css
+    |       |       Sidebar.css
+    |       |
+    |       \---ui
+    |               Button.css
+    |               IconButton.css
+    |               Loader.css
+    |               Modal.css
+    |
+    +---types
+    |       index.ts
+    |
+    \---utils
+            api.ts
+            helpers.ts
+\--- App.tsx
+\--- main.tsx
 ```
 
 ## 组件设计与开发
