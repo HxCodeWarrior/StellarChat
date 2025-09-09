@@ -63,7 +63,11 @@ class LLMInference:
         prompt = self.format_prompt(messages)
         
         # 编码输入
-        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, add_special_tokens=False)
+        # 显式创建attention_mask以避免警告
+        if self.tokenizer.pad_token_id == self.tokenizer.eos_token_id:
+            attention_mask = (inputs['input_ids'] != self.tokenizer.pad_token_id).long()
+            inputs['attention_mask'] = attention_mask
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
         
         # 生成回复
@@ -91,23 +95,34 @@ class LLMInference:
         prompt = self.format_prompt(messages)
         
         # 编码输入
-        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)
+        inputs = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, add_special_tokens=False)
+        # 显式创建attention_mask以避免警告
+        if self.tokenizer.pad_token_id == self.tokenizer.eos_token_id:
+            attention_mask = (inputs['input_ids'] != self.tokenizer.pad_token_id).long()
+            inputs['attention_mask'] = attention_mask
         input_ids = inputs.input_ids.to(self.model.device)
+        attention_mask = inputs.attention_mask.to(self.model.device) if 'attention_mask' in inputs else None
         
         # 使用模型的generate方法实现流式输出
         with torch.no_grad():
             # 生成回复
-            outputs = self.model.generate(
-                input_ids,
-                max_new_tokens=max_new_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                do_sample=True,
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-                output_scores=True,
-                return_dict_in_generate=True
-            )
+            generate_kwargs = {
+                "input_ids": input_ids,
+                "max_new_tokens": max_new_tokens,
+                "temperature": temperature,
+                "top_p": top_p,
+                "do_sample": True,
+                "pad_token_id": self.tokenizer.pad_token_id,
+                "eos_token_id": self.tokenizer.eos_token_id,
+                "output_scores": True,
+                "return_dict_in_generate": True
+            }
+            
+            # 只有当attention_mask存在且不为None时才添加
+            if attention_mask is not None:
+                generate_kwargs["attention_mask"] = attention_mask
+                
+            outputs = self.model.generate(**generate_kwargs)
         
         # 解码输出
         generated_tokens = outputs.sequences[0][len(input_ids[0]):]
