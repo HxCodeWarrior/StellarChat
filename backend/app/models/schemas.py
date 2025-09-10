@@ -114,3 +114,19 @@ class MessageStopEvent(BaseModel):
 class ErrorEvent(BaseModel):
     event: str = "error"
     data: Dict[str, str]
+
+
+# API Key管理相关的数据模型
+class APIKeyCreate(BaseModel):
+    name: str = Field(..., description="API Key名称")
+
+
+class APIKeyResponse(BaseModel):
+    id: str
+    name: str
+    created_at: datetime
+    is_active: bool
+
+
+class APIKeyListResponse(BaseModel):
+    data: List[APIKeyResponse]

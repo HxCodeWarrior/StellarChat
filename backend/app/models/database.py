@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 from typing import Optional
 from datetime import datetime
 import json
+import secrets
 from app.config import settings
 
 Base = declarative_base()
@@ -37,6 +38,22 @@ class MessageModel(Base):
     
     # 关联回话
     session = relationship("SessionModel", back_populates="messages")
+
+
+class APIKeyModel(Base):
+    """API Key模型"""
+    __tablename__ = 'api_keys'
+    
+    id = Column(String, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    key = Column(String, unique=True, nullable=False, index=True)
+    created_at = Column(DateTime, default=func.now(), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    @staticmethod
+    def generate_key() -> str:
+        """生成安全的API Key"""
+        return "sk-" + secrets.token_urlsafe(32)
 
 
 # 数据库引擎和会话工厂

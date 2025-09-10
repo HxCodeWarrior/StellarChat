@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, Histogram, make_asgi_app
 from app.config import settings
 from app.routers import health, models, chat_completions, chat_ws
-from app.routers import sessions
+from app.routers import sessions, api_keys
 from app.utils import get_logger
 import time
 
@@ -120,6 +120,7 @@ app.include_router(models.router, prefix=settings.API_PREFIX)
 app.include_router(chat_completions.router, prefix=settings.API_PREFIX)
 app.include_router(chat_ws.router, prefix=settings.API_PREFIX)
 app.include_router(sessions.router, prefix=settings.API_PREFIX)
+app.include_router(api_keys.router, prefix=settings.API_PREFIX)
 
 # 添加根路径处理
 @app.get("/")

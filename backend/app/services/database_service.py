@@ -1,3 +1,4 @@
+import json
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import List, Optional
@@ -9,9 +10,8 @@ import uuid
 class DatabaseService:
     """数据库服务类，提供会话和消息的CRUD操作"""
     
-    def create_session(self, db: Session, title: str) -> SessionModel:
+    def create_session(self, db: Session, session_id: str, title: str) -> SessionModel:
         """创建新会话"""
-        session_id = str(uuid.uuid4())
         db_session = SessionModel(
             id=session_id,
             title=title

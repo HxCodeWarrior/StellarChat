@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException
 import asyncio
 import json
 import time
@@ -13,7 +13,6 @@ from app.models.schemas import (
     ChatCompletionChunkChoice,
     ChatCompletionChunkDelta
 )
-from app.models.database import get_db
 from app.services.database_service import DatabaseService
 from app.utils import get_logger, generate_id, format_timestamp
 
@@ -25,7 +24,7 @@ database_service = DatabaseService()
 class ChatService:
     """聊天服务类"""
     
-    async def generate_completion(self, request: ChatCompletionRequest, session_id: str = None, db = Depends(get_db)) -> ChatCompletionResponse:
+    async def generate_completion(self, request: ChatCompletionRequest, session_id: str = None, db = None) -> ChatCompletionResponse:
         """生成聊天完成响应"""
         try:
             # 记录开始时间
@@ -47,20 +46,17 @@ class ChatService:
             completion_tokens = len(response_text)
             total_tokens = prompt_tokens + completion_tokens
             
-            # 如果提供了会话ID，将消息保存到数据库
-            if session_id:
-                # 保存用户消息（如果尚未保存）
+            # 如果提供了会话ID且有数据库连接，将消息保存到数据库
+            if session_id and db:
+                # 保存用户消息
                 for msg in request.messages:
-                    # 检查消息是否已存在
-                    existing_messages = database_service.get_messages_as_chat_history(db, session_id)
-                    if msg not in existing_messages:
-                        database_service.add_message(
-                            db, 
-                            session_id, 
-                            msg.role, 
-                            msg.content, 
-                            len(msg.content) if isinstance(msg.content, str) else 0
-                        )
+                    database_service.add_message(
+                        db, 
+                        session_id, 
+                        msg.role, 
+                        msg.content, 
+                        len(msg.content) if isinstance(msg.content, str) else 0
+                    )
                 
                 # 保存AI回复
                 database_service.add_message(
