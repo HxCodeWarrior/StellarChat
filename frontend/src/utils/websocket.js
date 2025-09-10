@@ -1,3 +1,5 @@
+import { useSettingStore } from '@/stores/setting'
+
 export class WebSocketClient {
   constructor() {
     this.ws = null
@@ -9,10 +11,18 @@ export class WebSocketClient {
 
   // 连接到WebSocket服务器
   connect(sessionId = null) {
+    const settingStore = useSettingStore()
+    
     // 构建WebSocket URL
     let wsUrl = 'ws://localhost:8080/api/ws/chat'
     if (sessionId) {
       wsUrl += `?session_id=${sessionId}`
+    }
+
+    // 添加API Key到URL参数中（WebSocket不支持自定义headers）
+    if (settingStore.settings.apiKey) {
+      const separator = wsUrl.includes('?') ? '&' : '?'
+      wsUrl += `${separator}api_key=${settingStore.settings.apiKey}`
     }
 
     // 创建WebSocket连接

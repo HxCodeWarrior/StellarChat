@@ -23,7 +23,8 @@ export const useSettingStore = defineStore(
   },
 )
 
-export const modelOptions = [
+// 默认模型选项
+export const defaultModelOptions = [
   {
     label: 'DeepSeek-R1',
     value: 'deepseek-ai/DeepSeek-R1',

@@ -11,6 +11,50 @@
   - Swagger UI: `http://localhost:8080/api/docs`
   - ReDoc: `http://localhost:8080/api/redoc`
 
+## 3. 认证
+
+所有API端点（除了健康检查）都需要通过API Key进行认证。
+
+### 认证方式
+
+在请求头中添加`Authorization`字段：
+
+```
+Authorization: Bearer sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
+### 获取API Key
+
+API Key可以通过API Key管理接口创建和管理。
+
+#### POST /api-keys
+创建新的API Key。
+
+**请求体:**
+```json
+{
+  "name": "My API Key"
+}
+```
+
+**响应:**
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "My API Key",
+  "created_at": "2023-01-01T00:00:00",
+  "is_active": true
+}
+```
+
+实际的API Key只在创建时返回一次，请妥善保管：
+
+```json
+{
+  "key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+```
+
 ## 3. API端点
 
 ### 3.1 健康检查
@@ -40,15 +84,63 @@
       "object": "model",
       "created": 1700000000,
       "owned_by": "stellar-byte"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "deepseek-ai"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "deepseek-ai"
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V2.5",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "deepseek-ai"
+    },
+    {
+      "id": "Qwen/Qwen2.5-72B-Instruct-128K",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "Qwen"
+    },
+    {
+      "id": "Qwen/QwQ-32B-Preview",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "Qwen"
+    },
+    {
+      "id": "THUDM/glm-4-9b-chat",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "THUDM"
+    },
+    {
+      "id": "Pro/THUDM/glm-4-9b-chat",
+      "object": "model",
+      "created": 1700000000,
+      "owned_by": "THUDM"
     }
   ]
 }
 ```
 
-### 3.3 聊天完成 (REST API)
+### 3.6 聊天完成 (REST API)
 
 #### POST /chat/completions
 创建聊天完成。
+
+**认证:**
+需要通过`Authorization`头提供API Key:
+```
+Authorization: Bearer sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
 
 **参数:**
 - `session_id` (query, optional): 会话ID，用于保存聊天历史
@@ -109,13 +201,96 @@ data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1700000000
 data: [DONE]
 ```
 
-### 3.4 WebSocket聊天
+### 3.4 API Key管理
+
+#### POST /api-keys
+创建新的API Key。
+
+**请求体:**
+```json
+{
+  "name": "My API Key"
+}
+```
+
+**响应:**
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "My API Key",
+  "created_at": "2023-01-01T00:00:00",
+  "is_active": true
+}
+```
+
+实际的API Key只在创建时返回一次，请妥善保管：
+
+```json
+{
+  "key": "sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}
+```
+
+#### GET /api-keys
+获取API Key列表。
+
+**响应:**
+```json
+{
+  "data": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "My API Key",
+      "created_at": "2023-01-01T00:00:00",
+      "is_active": true
+    }
+  ]
+}
+```
+
+#### DELETE /api-keys/{key_id}
+删除API Key。
+
+**响应:**
+```json
+{
+  "message": "API Key删除成功"
+}
+```
+
+#### POST /api-keys/{key_id}/deactivate
+停用API Key。
+
+**响应:**
+```json
+{
+  "message": "API Key已停用"
+}
+```
+
+#### POST /api-keys/{key_id}/activate
+启用API Key。
+
+**响应:**
+```json
+{
+  "message": "API Key已启用"
+}
+```
+
+### 3.5 WebSocket聊天
 
 #### WebSocket /ws/chat
 WebSocket聊天接口。
 
 **参数:**
 - `session_id` (query, optional): 会话ID，用于保存聊天历史
+
+**认证:**
+需要在WebSocket握手时通过`Authorization`头提供API Key:
+```
+Authorization: Bearer sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
 
 **客户端发送:**
 ```json

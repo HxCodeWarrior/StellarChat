@@ -2,13 +2,14 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from app.models.database import get_db, APIKeyModel
-from app.models.schemas import APIKeyCreate, APIKeyResponse, APIKeyListResponse
+from app.models.schemas import APIKeyCreate, APIKeyResponse, APIKeyCreateResponse, APIKeyListResponse
 from app.utils import get_logger
+import uuid
 
 router = APIRouter()
 logger = get_logger()
 
-@router.post("/api-keys", response_model=APIKeyResponse)
+@router.post("/api-keys", response_model=APIKeyCreateResponse)
 async def create_api_key(api_key_data: APIKeyCreate, db: Session = Depends(get_db)):
     """创建新的API Key"""
     try:
@@ -17,6 +18,7 @@ async def create_api_key(api_key_data: APIKeyCreate, db: Session = Depends(get_d
         
         # 创建API Key记录
         db_api_key = APIKeyModel(
+            id=str(uuid.uuid4()),
             name=api_key_data.name,
             key=key
         )
@@ -26,12 +28,13 @@ async def create_api_key(api_key_data: APIKeyCreate, db: Session = Depends(get_d
         db.commit()
         db.refresh(db_api_key)
         
-        # 返回API Key信息（不包含key本身）
-        return APIKeyResponse(
+        # 返回API Key信息（包含key本身，仅在创建时返回）
+        return APIKeyCreateResponse(
             id=db_api_key.id,
             name=db_api_key.name,
             created_at=db_api_key.created_at,
-            is_active=db_api_key.is_active
+            is_active=db_api_key.is_active,
+            key=key
         )
     except Exception as e:
         logger.error(f"创建API Key失败: {str(e)}")

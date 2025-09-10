@@ -99,10 +99,20 @@ onUnmounted(() => {
             <p class="note" style="color: #3f7af1">支持 deepseek_r1 模型</p>
           </div>
         </div>
-        <router-link to="/chat" class="start-button">
-          <span class="mirror-text">开始对话</span>
-          <div class="liquid"></div>
-        </router-link>
+        <div class="action-buttons">
+          <router-link to="/chat" class="start-button">
+            <span class="mirror-text">开始对话</span>
+            <div class="liquid"></div>
+          </router-link>
+          <div class="api-key-buttons">
+            <router-link to="/get-api-key" class="api-key-button">
+              获取 API Key
+            </router-link>
+            <router-link to="/api-key-management" class="api-key-button">
+              管理 API Key
+            </router-link>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -404,6 +414,38 @@ onUnmounted(() => {
       &:active {
         transform: scale(0.98) translateY(0);
         box-shadow: 0 5px 20px -10px var(--el-color-primary);
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      margin-top: 40px;
+    }
+
+    .api-key-buttons {
+      display: flex;
+      gap: 16px;
+      
+      .api-key-button {
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--el-color-primary);
+        background: transparent;
+        border: 1px solid var(--el-color-primary);
+        border-radius: 8px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1001; /* 确保按钮在搜索对话框之上 */
+        
+        &:hover {
+          background: var(--el-color-primary);
+          color: #fff;
+        }
       }
     }
 

@@ -1,16 +1,24 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
-import { useSettingStore, modelOptions } from '@/stores/setting'
+import { ref, watch, computed, onMounted } from 'vue'
+import { useSettingStore, defaultModelOptions } from '@/stores/setting'
+import { fetchModelList } from '@/utils/models'
 import { QuestionFilled } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 
 const settingStore = useSettingStore()
+const router = useRouter()
 
 // 控制抽屉显示
 const visible = ref(false)
 
+// 模型选项
+const modelOptions = ref(defaultModelOptions)
+
+
+
 // 计算当前选中模型的最大 tokens
 const currentMaxTokens = computed(() => {
-  const selectedModel = modelOptions.find((option) => option.value === settingStore.settings.model)
+  const selectedModel = modelOptions.value.find((option) => option.value === settingStore.settings.model)
   return selectedModel ? selectedModel.maxTokens : 4096
 })
 
@@ -18,7 +26,7 @@ const currentMaxTokens = computed(() => {
 watch(
   () => settingStore.settings.model,
   (newModel) => {
-    const selectedModel = modelOptions.find((option) => option.value === newModel)
+    const selectedModel = modelOptions.value.find((option) => option.value === newModel)
     if (selectedModel) {
       // 更新 maxTokens，并确保不超过模型的最大值
       settingStore.settings.maxTokens = Math.min(
@@ -29,10 +37,43 @@ watch(
   },
 )
 
+// 获取模型列表
+const loadModelList = async () => {
+  try {
+    // 只有当用户设置了API Key时才从后端获取模型列表
+    if (settingStore.settings.apiKey) {
+      const models = await fetchModelList()
+      modelOptions.value = models
+    }
+  } catch (error) {
+    console.error('获取模型列表失败，使用默认模型列表:', error)
+    modelOptions.value = defaultModelOptions
+  }
+}
+
 // 打开抽屉
 const openDrawer = () => {
   visible.value = true
+  // 每次打开抽屉时重新加载模型列表
+  loadModelList()
 }
+
+// 打开API Key管理对话框
+const openApiKeyManagement = () => {
+  // 跳转到API Key管理页面
+  router.push('/api-key-management')
+}
+
+// 生成新的API Key
+const generateApiKey = async () => {
+  // 跳转到获取API Key页面
+  router.push('/get-api-key')
+}
+
+// 组件挂载时加载模型列表
+onMounted(() => {
+  loadModelList()
+})
 
 // 导出方法供父组件调用
 defineExpose({
@@ -58,6 +99,9 @@ defineExpose({
             :value="option.value"
           />
         </el-select>
+        <div class="model-refresh">
+          <el-button size="small" @click="loadModelList">刷新模型列表</el-button>
+        </div>
       </div>
 
       <!-- 流式响应开关 -->
@@ -78,14 +122,13 @@ defineExpose({
         <div class="setting-label-row">
           <div class="label-with-tooltip">
             <span>API Key</span>
-            <el-tooltip content="设置 API Key" placement="top">
+            <el-tooltip content="设置 API KEY" placement="top">
               <el-icon><QuestionFilled /></el-icon>
             </el-tooltip>
           </div>
-
-          <a href="https://cloud.siliconflow.cn/account/ak" target="_blank" class="get-key-link">
-            获取 API Key
-          </a>
+          <div class="api-key-management">
+            <el-button size="small" @click="openApiKeyManagement">管理 API KEY</el-button>
+          </div>
         </div>
         <el-input
           v-model="settingStore.settings.apiKey"
@@ -93,6 +136,9 @@ defineExpose({
           placeholder="请输入 API Key"
           show-password
         />
+        <div class="api-key-hint">
+          <el-button type="primary" size="small" @click="generateApiKey">获取 API KEY</el-button>
+        </div>
       </div>
 
       <!-- Max Tokens -->
@@ -270,9 +316,29 @@ defineExpose({
     width: 100%;
   }
 
+  // 模型刷新按钮样式
+  .model-refresh {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
   // 下拉选项文字颜色
   :deep(.el-select-dropdown__item) {
     color: #27272a;
   }
+  
+  // API Key提示链接样式
+  .api-key-hint {
+    margin-top: 8px;
+    
+    .get-key-link {
+      font-size: 14px;
+      color: #3f7af1;
+      text-decoration: none;
+    }
+  }
 }
 </style>
+
+

@@ -128,5 +128,9 @@ class APIKeyResponse(BaseModel):
     is_active: bool
 
 
+class APIKeyCreateResponse(APIKeyResponse):
+    key: str
+
+
 class APIKeyListResponse(BaseModel):
     data: List[APIKeyResponse]
