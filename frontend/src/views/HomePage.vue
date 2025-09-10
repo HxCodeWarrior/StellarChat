@@ -104,14 +104,7 @@ onUnmounted(() => {
             <span class="mirror-text">开始对话</span>
             <div class="liquid"></div>
           </router-link>
-          <div class="api-key-buttons">
-            <router-link to="/get-api-key" class="api-key-button">
-              获取 API Key
-            </router-link>
-            <router-link to="/api-key-management" class="api-key-button">
-              管理 API Key
-            </router-link>
-          </div>
+          
         </div>
       </div>
     </main>
