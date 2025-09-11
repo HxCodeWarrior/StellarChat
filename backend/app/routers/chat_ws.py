@@ -28,22 +28,30 @@ database_service = DatabaseService()
 
 async def get_api_key_from_websocket(websocket: WebSocketType):
     """从WebSocket连接中获取并验证API Key"""
-    # 获取Authorization头
+    # 首先尝试从Authorization头获取API Key
     auth_header = websocket.headers.get("Authorization")
+    api_key = None
     
-    if not auth_header:
-        logger.warning("WebSocket连接缺少Authorization头")
-        await websocket.close(code=4000, reason="缺少Authorization头")
+    if auth_header:
+        # 检查Bearer token格式
+        if auth_header.startswith("Bearer "):
+            # 提取API Key
+            api_key = auth_header.split(" ")[1]
+    
+    # 如果Authorization头中没有API Key，则尝试从URL参数获取
+    if not api_key:
+        # 从查询参数中获取API Key
+        from urllib.parse import parse_qs
+        query_string = websocket.scope.get("query_string", b"").decode()
+        query_params = parse_qs(query_string)
+        api_key_list = query_params.get("api_key", [])
+        if api_key_list:
+            api_key = api_key_list[0]
+    
+    if not api_key:
+        logger.warning("WebSocket连接缺少API Key")
+        await websocket.close(code=4000, reason="缺少API Key")
         return None
-    
-    # 检查Bearer token格式
-    if not auth_header.startswith("Bearer "):
-        logger.warning("WebSocket连接无效的Authorization头格式")
-        await websocket.close(code=4000, reason="无效的Authorization头格式")
-        return None
-    
-    # 提取API Key
-    api_key = auth_header.split(" ")[1]
     
     # 获取数据库连接
     db = next(get_db())
