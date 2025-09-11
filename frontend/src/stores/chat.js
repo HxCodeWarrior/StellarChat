@@ -1,6 +1,15 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 
+// UUID 生成函数
+const generateUUID = () => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
+}
+
 export const useChatStore = defineStore(
   'llm-chat',
   () => {
@@ -31,7 +40,7 @@ export const useChatStore = defineStore(
     // 创建新对话
     const createConversation = () => {
       const newConversation = {
-        id: Date.now().toString(),
+        id: generateUUID(),
         title: '新对话',
         messages: [],
         createdAt: Date.now(),
@@ -49,7 +58,7 @@ export const useChatStore = defineStore(
     const addMessage = (message) => {
       if (currentConversation.value) {
         currentConversation.value.messages.push({
-          id: Date.now(),
+          id: generateUUID(),
           timestamp: new Date().toISOString(),
           ...message,
         })
