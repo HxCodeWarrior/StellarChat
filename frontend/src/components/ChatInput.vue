@@ -47,10 +47,30 @@ const handleFileUpload = (uploadFile) => {
   const file = uploadFile.raw
   if (!file) return false
 
+  // 文件类型和大小验证
+  const isImage = file.type.startsWith('image/')
+  const maxSize = isImage ? 5 * 1024 * 1024 : 10 * 1024 * 1024 // 图片5MB，文档10MB
+
+  if (file.size > maxSize) {
+    const maxSizeMB = maxSize / 1024 / 1024
+    alert(`文件大小不能超过 ${maxSizeMB}MB`)
+    return false
+  }
+
+  // 验证文档类型
+  if (!isImage) {
+    const validExtensions = ['.pdf', '.doc', '.docx', '.txt']
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+    if (!validExtensions.includes(fileExtension)) {
+      alert('只支持 PDF, DOC, DOCX, TXT 格式的文档')
+      return false
+    }
+  }
+
   fileList.value.push({
     name: file.name,
     url: URL.createObjectURL(file),
-    type: file.type.startsWith('image/') ? 'image' : 'file',
+    type: isImage ? 'image' : 'file',
     size: file.size,
   })
   return false // 阻止自动上传
@@ -111,6 +131,7 @@ const handleFileRemove = (file) => {
           <img src="@/assets/photo/附件.png" alt="link" />
         </button>
       </el-upload>
+      <span class="upload-hint">文档：PDF, DOC, DOCX, TXT (最大10MB)</span>
       <el-upload
         class="upload-btn"
         :auto-upload="false"
@@ -122,6 +143,7 @@ const handleFileRemove = (file) => {
           <img src="@/assets/photo/图片.png" alt="picture" />
         </button>
       </el-upload>
+      <span class="upload-hint">图片：JPG, PNG, GIF (最大5MB)</span>
       <div class="divider"></div>
       <button class="action-btn send-btn" :disabled="props.loading" @click="handleSend">
         <img src="@/assets/photo/发送.png" alt="send" />
@@ -233,6 +255,14 @@ const handleFileRemove = (file) => {
 
     .upload-btn {
       display: inline-block;
+    }
+
+    /* 上传提示文本样式 */
+    .upload-hint {
+      font-size: 0.75rem;
+      color: #909399;
+      margin: 0 0.5rem;
+      white-space: nowrap;
     }
 
     /* 分隔线样式 */
