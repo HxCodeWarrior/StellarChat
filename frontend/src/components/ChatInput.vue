@@ -131,7 +131,6 @@ const handleFileRemove = (file) => {
           <img src="@/assets/photo/附件.png" alt="link" />
         </button>
       </el-upload>
-      <span class="upload-hint">文档：PDF, DOC, DOCX, TXT (最大10MB)</span>
       <el-upload
         class="upload-btn"
         :auto-upload="false"
@@ -143,7 +142,6 @@ const handleFileRemove = (file) => {
           <img src="@/assets/photo/图片.png" alt="picture" />
         </button>
       </el-upload>
-      <span class="upload-hint">图片：JPG, PNG, GIF (最大5MB)</span>
       <div class="divider"></div>
       <button class="action-btn send-btn" :disabled="props.loading" @click="handleSend">
         <img src="@/assets/photo/发送.png" alt="send" />
